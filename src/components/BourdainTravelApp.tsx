@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Compass, 
@@ -10,23 +10,61 @@ import {
   Cpu, 
   Database, 
   Sparkles, 
-  Clock, 
-  ChevronRight,
   Globe,
-  Award
+  Loader2
 } from "lucide-react";
-import { destinations, Destination } from "@/data/destinations";
+import { Destination } from "@/data/destinations";
+import { fetchDestinations } from "@/utils/dataService";
+import { isSupabaseConfigured } from "@/utils/supabase";
 
 interface BourdainTravelAppProps {
-  // We'll pass the Globe component as a child or render a placeholder for now
   globeComponent?: React.ReactNode;
+  onDestinationSelect?: (dest: Destination) => void;
 }
 
-export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppProps) {
-  const [selectedDestId, setSelectedDestId] = useState<string>(destinations[0].id);
+export default function BourdainTravelApp({ globeComponent, onDestinationSelect }: BourdainTravelAppProps) {
+  const [destinationsList, setDestinationsList] = useState<Destination[]>([]);
+  const [selectedDestId, setSelectedDestId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"journal" | "culinary" | "portfolio">("journal");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const selectedDest = destinations.find(d => d.id === selectedDestId) || destinations[0];
+  useEffect(() => {
+    fetchDestinations().then(data => {
+      setDestinationsList(data);
+      if (data.length > 0) {
+        setSelectedDestId(data[0].id);
+        if (onDestinationSelect) {
+          onDestinationSelect(data[0]);
+        }
+      }
+      setIsLoading(false);
+    });
+  }, [onDestinationSelect]);
+
+  const selectedDest = destinationsList.find(d => d.id === selectedDestId);
+
+  // Trigger callback when destination selection changes (important for the globe to sync)
+  const handleDestinationSelect = (dest: Destination) => {
+    setSelectedDestId(dest.id);
+    if (onDestinationSelect) {
+      onDestinationSelect(dest);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-[#060607] text-neutral-300 font-mono">
+        <div className="pointer-events-none absolute inset-0 grain-overlay z-50" />
+        <div className="flex flex-col items-center gap-4 text-center p-8 max-w-sm">
+          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+          <h3 className="text-sm font-semibold tracking-widest text-glow-amber uppercase">Reading Logs</h3>
+          <p className="text-xs text-neutral-500 italic">
+            &ldquo;Travel isn&apos;t always pretty. It isn&apos;t always comfortable.&rdquo;
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen w-full flex flex-col md:flex-row overflow-hidden bg-[#060607]">
@@ -48,7 +86,7 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
             <div>
               <span className="text-xs uppercase tracking-widest text-neutral-500 font-mono">Field Dispatch</span>
               <h1 className="text-xl font-bold font-serif text-white tracking-tight text-glow-amber">
-                Bourdain's Travel Tool
+                Bourdain&apos;s Travel Tool
               </h1>
             </div>
           </div>
@@ -97,7 +135,7 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
         {/* Tab Content (Scrollable Area) */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <AnimatePresence mode="wait">
-            {activeTab === "journal" && (
+            {activeTab === "journal" && selectedDest && (
               <motion.div
                 key="journal"
                 initial={{ opacity: 0, y: 10 }}
@@ -110,10 +148,10 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
                 <div>
                   <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-3">Choose Destination</h2>
                   <div className="flex flex-wrap gap-2">
-                    {destinations.map((dest) => (
+                    {destinationsList.map((dest) => (
                       <button
                         key={dest.id}
-                        onClick={() => setSelectedDestId(dest.id)}
+                        onClick={() => handleDestinationSelect(dest)}
                         className={`px-3 py-1.5 rounded-md text-xs font-mono border transition-all ${
                           selectedDestId === dest.id
                             ? "bg-orange-500/10 border-orange-500/40 text-orange-500"
@@ -165,7 +203,7 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
               </motion.div>
             )}
 
-            {activeTab === "culinary" && (
+            {activeTab === "culinary" && selectedDest && (
               <motion.div
                 key="culinary"
                 initial={{ opacity: 0, y: 10 }}
@@ -221,7 +259,7 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
                 className="space-y-6"
               >
                 <div>
-                  <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-2">The Builder's Logbook</h2>
+                  <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-2">The Builder&apos;s Logbook</h2>
                   <p className="text-xs text-neutral-400 leading-relaxed">
                     Weaving engineering discipline with the storytelling spirit of Bourdain. Here is how my skills line up with your team&apos;s search.
                   </p>
@@ -293,8 +331,8 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
         {/* Sidebar Footer Details */}
         <div className="p-4 border-t border-neutral-800/60 bg-neutral-950 font-mono text-[10px] text-neutral-500 flex justify-between items-center">
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-            <span>SYSTEM: NOMAD-V1.0</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? "bg-green-500 animate-pulse" : "bg-amber-500"}`}></span>
+            <span>DB: {isSupabaseConfigured ? "SUPABASE LIVE" : "MOCK FALLBACK"}</span>
           </div>
           <span>Bourdain Travel Tool</span>
         </div>
@@ -305,7 +343,7 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
         {globeComponent ? (
           globeComponent
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center relative">
+          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center relative animate-fadeIn">
             {/* Visual Guide/Map background */}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(38,38,38,0.25)_0%,transparent_70%)]" />
             <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
@@ -319,9 +357,11 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
                 <p className="text-xs text-neutral-500 font-mono mt-1">
                   Connecting coordinates...
                 </p>
-                <div className="mt-3 text-xs font-mono text-orange-500/70 border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 rounded inline-block">
-                  ACTIVE: {selectedDest.name} ({selectedDest.coordinates})
-                </div>
+                {selectedDest && (
+                  <div className="mt-3 text-xs font-mono text-orange-500/70 border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 rounded inline-block animate-pulse">
+                    ACTIVE: {selectedDest.name} ({selectedDest.coordinates})
+                  </div>
+                )}
               </div>
               <p className="text-[11px] text-neutral-400 italic">
                 Step 3 will mount the fully interactive 3D WebGL Globe here with coordinates mapping, arc paths, and navigation.
@@ -329,12 +369,14 @@ export default function BourdainTravelApp({ globeComponent }: BourdainTravelAppP
             </div>
 
             {/* Float paths overlay mock design element */}
-            <div className="absolute bottom-6 right-6 font-mono text-[10px] text-neutral-600 border border-neutral-900 p-3 rounded bg-neutral-950/40 text-left space-y-1">
-              <div>// CAMERA PATH METRICS</div>
-              <div>LATITUDE: {selectedDest.lat.toFixed(4)}</div>
-              <div>LONGITUDE: {selectedDest.lng.toFixed(4)}</div>
-              <div>ZOOM: 1.8x</div>
-            </div>
+            {selectedDest && (
+              <div className="absolute bottom-6 right-6 font-mono text-[10px] text-neutral-600 border border-neutral-900 p-3 rounded bg-neutral-950/40 text-left space-y-1">
+                <div>// CAMERA PATH METRICS</div>
+                <div>LATITUDE: {selectedDest.lat.toFixed(4)}</div>
+                <div>LONGITUDE: {selectedDest.lng.toFixed(4)}</div>
+                <div>ZOOM: 1.8x</div>
+              </div>
+            )}
           </div>
         )}
       </main>
