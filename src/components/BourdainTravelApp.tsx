@@ -10,19 +10,14 @@ import {
   Cpu, 
   Database, 
   Sparkles, 
-  Globe,
   Loader2
 } from "lucide-react";
 import { Destination } from "@/data/destinations";
 import { fetchDestinations } from "@/utils/dataService";
 import { isSupabaseConfigured } from "@/utils/supabase";
+import TravelGlobeWrapper from "@/components/TravelGlobeWrapper";
 
-interface BourdainTravelAppProps {
-  globeComponent?: React.ReactNode;
-  onDestinationSelect?: (dest: Destination) => void;
-}
-
-export default function BourdainTravelApp({ globeComponent, onDestinationSelect }: BourdainTravelAppProps) {
+export default function BourdainTravelApp() {
   const [destinationsList, setDestinationsList] = useState<Destination[]>([]);
   const [selectedDestId, setSelectedDestId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"journal" | "culinary" | "portfolio">("journal");
@@ -33,22 +28,15 @@ export default function BourdainTravelApp({ globeComponent, onDestinationSelect 
       setDestinationsList(data);
       if (data.length > 0) {
         setSelectedDestId(data[0].id);
-        if (onDestinationSelect) {
-          onDestinationSelect(data[0]);
-        }
       }
       setIsLoading(false);
     });
-  }, [onDestinationSelect]);
+  }, []);
 
-  const selectedDest = destinationsList.find(d => d.id === selectedDestId);
+  const selectedDest = destinationsList.find(d => d.id === selectedDestId) || null;
 
-  // Trigger callback when destination selection changes (important for the globe to sync)
   const handleDestinationSelect = (dest: Destination) => {
     setSelectedDestId(dest.id);
-    if (onDestinationSelect) {
-      onDestinationSelect(dest);
-    }
   };
 
   if (isLoading) {
@@ -339,46 +327,12 @@ export default function BourdainTravelApp({ globeComponent, onDestinationSelect 
       </aside>
 
       {/* Right Content Area: 3D Globe / Visual Showpiece */}
-      <main className="flex-1 relative min-h-[400px] md:min-h-0 flex items-center justify-center bg-black">
-        {globeComponent ? (
-          globeComponent
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center relative animate-fadeIn">
-            {/* Visual Guide/Map background */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(38,38,38,0.25)_0%,transparent_70%)]" />
-            <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-
-            <div className="relative space-y-4 max-w-sm z-10">
-              <div className="w-20 h-20 mx-auto rounded-full border-2 border-dashed border-orange-500/30 flex items-center justify-center text-orange-500/60">
-                <Globe className="w-8 h-8 animate-spin" style={{ animationDuration: "12s" }} />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-neutral-300 font-serif">Globe Viewport Placeholder</h3>
-                <p className="text-xs text-neutral-500 font-mono mt-1">
-                  Connecting coordinates...
-                </p>
-                {selectedDest && (
-                  <div className="mt-3 text-xs font-mono text-orange-500/70 border border-orange-500/20 bg-orange-500/5 px-2.5 py-1.5 rounded inline-block animate-pulse">
-                    ACTIVE: {selectedDest.name} ({selectedDest.coordinates})
-                  </div>
-                )}
-              </div>
-              <p className="text-[11px] text-neutral-400 italic">
-                Step 3 will mount the fully interactive 3D WebGL Globe here with coordinates mapping, arc paths, and navigation.
-              </p>
-            </div>
-
-            {/* Float paths overlay mock design element */}
-            {selectedDest && (
-              <div className="absolute bottom-6 right-6 font-mono text-[10px] text-neutral-600 border border-neutral-900 p-3 rounded bg-neutral-950/40 text-left space-y-1">
-                <div>// CAMERA PATH METRICS</div>
-                <div>LATITUDE: {selectedDest.lat.toFixed(4)}</div>
-                <div>LONGITUDE: {selectedDest.lng.toFixed(4)}</div>
-                <div>ZOOM: 1.8x</div>
-              </div>
-            )}
-          </div>
-        )}
+      <main className="flex-1 relative min-h-[400px] md:min-h-0 flex items-center justify-center bg-[#060607]">
+        <TravelGlobeWrapper 
+          destinations={destinationsList}
+          selectedDestination={selectedDest}
+          onSelectDestination={handleDestinationSelect}
+        />
       </main>
     </div>
   );
