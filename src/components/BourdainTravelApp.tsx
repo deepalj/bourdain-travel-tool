@@ -12,7 +12,8 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Edit3
 } from "lucide-react";
 import { Destination, CulinaryHighlight } from "@/data/destinations";
 import { fetchDestinations, saveDestination } from "@/utils/dataService";
@@ -33,6 +34,7 @@ export default function BourdainTravelApp() {
 
   // Embedded Sidebar Form States
   const [isLoggingNewPlace, setIsLoggingNewPlace] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formCity, setFormCity] = useState("");
   const [formCountry, setFormCountry] = useState("");
   const [formLat, setFormLat] = useState("");
@@ -68,6 +70,22 @@ export default function BourdainTravelApp() {
       setFormLng(coords.lng.toFixed(6));
       setTempPinCoords(coords);
     }
+  };
+
+  // Populate form with current selected destination values to trigger Edit Mode
+  const handleEditClick = () => {
+    if (!selectedDest) return;
+    setFormCity(selectedDest.name);
+    setFormCountry(selectedDest.country);
+    setFormLat(selectedDest.lat.toString());
+    setFormLng(selectedDest.lng.toString());
+    setFormQuote(selectedDest.quote);
+    setFormDesc(selectedDest.description);
+    setFormCulinary([...selectedDest.culinaryHighlights]);
+    setFormLessons([...selectedDest.lessonsLearned]);
+    setTempPinCoords({ lat: selectedDest.lat, lng: selectedDest.lng });
+    setIsEditing(true);
+    setIsLoggingNewPlace(true);
   };
 
   // Generate Bourdain-esque quotes and observations on the fly
@@ -109,7 +127,7 @@ export default function BourdainTravelApp() {
     setFormLessons(formLessons.map((item, i) => i === idx ? value : item));
   };
 
-  // Save new place
+  // Save or Update new place
   const handleSaveJourney = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formCity || !formCountry || !formLat || !formLng || !formQuote || !formDesc) {
@@ -124,7 +142,11 @@ export default function BourdainTravelApp() {
       return;
     }
 
-    const newId = `${formCountry.toLowerCase().replace(/\s+/g, "-")}-${formCity.toLowerCase().replace(/\s+/g, "-")}`;
+    // Reuse selected ID if editing, otherwise generate a URL-friendly one
+    const newId = isEditing && selectedDest 
+      ? selectedDest.id 
+      : `${formCountry.toLowerCase().replace(/\s+/g, "-")}-${formCity.toLowerCase().replace(/\s+/g, "-")}`;
+
     const newDest: Destination = {
       id: newId,
       name: formCity,
@@ -141,16 +163,21 @@ export default function BourdainTravelApp() {
 
     const success = await saveDestination(newDest);
     if (success) {
-      setDestinationsList(prev => [...prev, newDest]);
+      if (isEditing) {
+        setDestinationsList(prev => prev.map(d => d.id === newId ? newDest : d));
+      } else {
+        setDestinationsList(prev => [...prev, newDest]);
+      }
       setSelectedDestId(newDest.id);
       resetForm();
     } else {
-      alert("Failed to save new travel dispatch to Supabase.");
+      alert("Failed to save travel dispatch to Supabase.");
     }
   };
 
   const resetForm = () => {
     setIsLoggingNewPlace(false);
+    setIsEditing(false);
     setFormCity("");
     setFormCountry("");
     setFormLat("");
@@ -195,7 +222,7 @@ export default function BourdainTravelApp() {
         <span>Builder Log</span>
       </button>
 
-      {/* Left Sidebar: Journal / Stats / Form */}
+      {/* Left Sidebar: Journal / Stats */}
       <aside className="w-full md:w-[420px] lg:w-[460px] flex-shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-neutral-800/60 bg-neutral-950/85 backdrop-blur-md z-10 overflow-hidden">
         {/* Header Section */}
         <div className="p-6 border-b border-neutral-800/60 flex-shrink-0">
@@ -247,7 +274,7 @@ export default function BourdainTravelApp() {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <AnimatePresence mode="wait">
             {isLoggingNewPlace ? (
-              /* ==================== EMBEDDED JOURNAL LOG FORM ==================== */
+              /* ==================== EMBEDDED JOURNAL LOG & EDIT FORM ==================== */
               <motion.div
                 key="log-form"
                 initial={{ opacity: 0, x: -20 }}
@@ -264,8 +291,12 @@ export default function BourdainTravelApp() {
                     <ArrowLeft className="w-3.5 h-3.5" />
                   </button>
                   <div>
-                    <h2 className="text-xs font-bold text-white uppercase tracking-wider">// RECORD_JOURNEY</h2>
-                    <span className="text-[9px] text-neutral-500 uppercase">Interactive Field Form</span>
+                    <h2 className="text-xs font-bold text-white uppercase tracking-wider">
+                      {isEditing ? "// EDIT_DISPATCH" : "// RECORD_JOURNEY"}
+                    </h2>
+                    <span className="text-[9px] text-neutral-500 uppercase">
+                      {isEditing ? "Modify Log & Tasting Log" : "Interactive Field Form"}
+                    </span>
                   </div>
                 </div>
 
@@ -366,14 +397,14 @@ export default function BourdainTravelApp() {
                   {/* Culinary list */}
                   <div className="border-t border-neutral-900 pt-3.5 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-[10px] uppercase font-bold text-neutral-400">Foods Tasted</span>
+                      <span className="text-[10px] uppercase font-bold text-neutral-400">Foods & Tasting Log</span>
                       <button
                         type="button"
                         onClick={addCulinaryItem}
                         className="px-2 py-1 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 rounded flex items-center gap-1 cursor-pointer text-[9px]"
                       >
                         <Plus className="w-3 h-3" />
-                        <span>Add dish</span>
+                        <span>Add Dish</span>
                       </button>
                     </div>
 
@@ -427,7 +458,7 @@ export default function BourdainTravelApp() {
                               max="5"
                               value={item.heatLevel}
                               onChange={(e) => updateCulinaryItem(idx, "heatLevel", parseInt(e.target.value))}
-                              className="w-full accent-orange-500 cursor-pointer"
+                              className="w-full accent-orange-500 cursor-pointer bg-neutral-900"
                             />
                           </div>
                           <div className="space-y-0.5">
@@ -441,7 +472,7 @@ export default function BourdainTravelApp() {
                               max="5"
                               value={item.authenticity}
                               onChange={(e) => updateCulinaryItem(idx, "authenticity", parseInt(e.target.value))}
-                              className="w-full accent-orange-500 cursor-pointer"
+                              className="w-full accent-orange-500 cursor-pointer bg-neutral-900"
                             />
                           </div>
                         </div>
@@ -486,7 +517,7 @@ export default function BourdainTravelApp() {
                   </div>
 
                   {/* Form Actions */}
-                  <div className="border-t border-neutral-900 pt-4 flex justify-end gap-2.5">
+                  <div className="border-t border-neutral-900 pt-4 flex justify-end gap-2.5 font-mono">
                     <button
                       type="button"
                       onClick={resetForm}
@@ -498,7 +529,7 @@ export default function BourdainTravelApp() {
                       type="submit"
                       className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-black rounded cursor-pointer font-semibold text-[10px]"
                     >
-                      Save Dispatch
+                      {isEditing ? "Save Changes" : "Save Dispatch"}
                     </button>
                   </div>
                 </form>
@@ -519,13 +550,23 @@ export default function BourdainTravelApp() {
                     <div>
                       <div className="flex justify-between items-center mb-3">
                         <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono">Choose Destination</h2>
-                        <button
-                          onClick={() => setIsLoggingNewPlace(true)}
-                          className="px-2.5 py-1 rounded bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/50 text-orange-500 transition-all font-mono text-[9px] cursor-pointer flex items-center gap-1"
-                        >
-                          <Plus className="w-3 h-3" />
-                          <span>Log Journey</span>
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleEditClick}
+                            className="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 transition-all font-mono text-[9px] cursor-pointer flex items-center gap-1"
+                            title="Edit this log entry"
+                          >
+                            <Edit3 className="w-3 h-3 text-orange-500/70" />
+                            <span>Edit Log</span>
+                          </button>
+                          <button
+                            onClick={() => setIsLoggingNewPlace(true)}
+                            className="px-2.5 py-1 rounded bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/50 text-orange-500 transition-all font-mono text-[9px] cursor-pointer flex items-center gap-1"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Log Journey</span>
+                          </button>
+                        </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {destinationsList.map((dest) => (
@@ -600,8 +641,18 @@ export default function BourdainTravelApp() {
                     className="space-y-6"
                   >
                     <div className="flex items-center justify-between">
-                      <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono">Local Offerings in {selectedDest.name}</h2>
-                      <span className="text-xs text-neutral-400 font-mono bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">{selectedDest.country}</span>
+                      <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono font-bold">Local Offerings in {selectedDest.name}</h2>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          onClick={handleEditClick}
+                          className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 font-mono text-[9px] cursor-pointer flex items-center gap-1"
+                          title="Edit tasting dispatches"
+                        >
+                          <Edit3 className="w-2.5 h-2.5 text-orange-500/70" />
+                          <span>Edit Log</span>
+                        </button>
+                        <span className="text-[10px] text-neutral-400 font-mono bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">{selectedDest.country}</span>
+                      </div>
                     </div>
 
                     {/* Empty State */}

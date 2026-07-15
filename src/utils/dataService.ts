@@ -71,20 +71,20 @@ export async function fetchDestinations(): Promise<Destination[]> {
 }
 
 /**
- * Saves a new travel journal destination, along with its culinary highlights and lessons,
- * to the Supabase database (relational transaction insertion).
+ * Saves or updates (upserts) a travel journal destination along with its culinary highlights and lessons,
+ * utilizing Supabase database operations (relational cascade update).
  */
 export async function saveDestination(destination: Destination): Promise<boolean> {
   if (!isSupabaseConfigured) {
-    console.log("[DataService] Supabase not configured. Mocking successful local save.");
+    console.log("[DataService] Supabase not configured. Mocking successful local save/update.");
     return true;
   }
 
   try {
-    // 1. Insert parent destination
+    // 1. Upsert parent destination
     const { error: destError } = await supabase!
       .from("destinations")
-      .insert({
+      .upsert({
         id: destination.id,
         name: destination.name,
         country: destination.country,
@@ -97,11 +97,30 @@ export async function saveDestination(destination: Destination): Promise<boolean
       });
 
     if (destError) {
-      console.error("[DataService] Error inserting destination:", destError.message);
+      console.error("[DataService] Error upserting destination:", destError.message);
       throw destError;
     }
 
-    // 2. Insert related culinary highlights
+    // 2. Cascade delete existing highlights & lessons to re-insert clean, edited arrays
+    const { error: delHighlightsError } = await supabase!
+      .from("culinary_highlights")
+      .delete()
+      .eq("destination_id", destination.id);
+
+    if (delHighlightsError) {
+      console.error("[DataService] Error deleting existing highlights:", delHighlightsError.message);
+    }
+
+    const { error: delLessonsError } = await supabase!
+      .from("lessons")
+      .delete()
+      .eq("destination_id", destination.id);
+
+    if (delLessonsError) {
+      console.error("[DataService] Error deleting existing lessons:", delLessonsError.message);
+    }
+
+    // 3. Re-insert related culinary highlights
     if (destination.culinaryHighlights && destination.culinaryHighlights.length > 0) {
       const highlightsData = destination.culinaryHighlights.map(h => ({
         destination_id: destination.id,
@@ -122,7 +141,7 @@ export async function saveDestination(destination: Destination): Promise<boolean
       }
     }
 
-    // 3. Insert related lessons
+    // 4. Re-insert related lessons
     if (destination.lessonsLearned && destination.lessonsLearned.length > 0) {
       const lessonsData = destination.lessonsLearned.map(l => ({
         destination_id: destination.id,
@@ -141,7 +160,7 @@ export async function saveDestination(destination: Destination): Promise<boolean
 
     return true;
   } catch (error) {
-    console.error("[DataService] Failed relational transaction insert to database:", error);
+    console.error("[DataService] Failed relational cascade transaction inside database:", error);
     return false;
   }
 }
