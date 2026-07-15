@@ -72,15 +72,32 @@ cd bourdain-travel-tool
 npm install
 ```
 
-### 2. Configure Database (Optional)
-This application features a **mock failover wrapper**. If database credentials are not found, the app automatically switches to **Mock Fallback Mode** (indicated in the sidebar footer) so you can still log, edit, and explore locations locally.
+### 2. Configure Supabase Database (Optional)
 
-To connect a live Supabase database, create a `.env.local` file at the root:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-*You can provision your tables instantly by copy-pasting the schema inside `supabase-schema.sql` into the Supabase SQL editor.*
+This application has a built-in **failover data service**. If you don't configure Supabase credentials, it runs in **Mock Fallback Mode** (indicated in the sidebar footer), using local mock data. Any new dispatches or edits you make will save to the local React state.
+
+To connect your own live Supabase database and run it in live database mode, follow these steps:
+
+#### Step A: Provision the Supabase Project
+1. Go to [Supabase](https://supabase.com) and sign up for a free account.
+2. Click **New Project** and name it (e.g., `bourdain-travel-tool`). Set your database password and choose a region close to you.
+3. Once the database is provisioned, go to the **SQL Editor** tab in the left sidebar of your Supabase dashboard.
+4. Click **New Query**, then copy and paste the entire contents of the [supabase-schema.sql](file:///Users/deepaljain/Desktop/project%200/supabase-schema.sql) file located at the root of this project.
+5. Click **Run** to execute the script. This will instantly:
+   * Create the `destinations`, `culinary_highlights`, and `lessons` tables.
+   * Configure foreign key constraints and validation checks (like chili ranges).
+   * Enable Row-Level Security (RLS) for public selects and inserts (so any visitor can view and log travels on your demo site).
+   * Seed the database with the initial 5 travel logs.
+
+#### Step B: Set up Environment Variables
+1. In your Supabase dashboard, navigate to **Project Settings** (gear icon) -> **API**.
+2. Copy the **Project URL** and the **`anon` `public` API Key**.
+3. Create a new file named `.env.local` at the root of this project:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-copied-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-copied-anon-public-key
+   ```
+4. Restart your local server. The sidebar footer will now glow green and read: **`DB: SUPABASE LIVE`**!
 
 ### 3. Run Locally
 ```bash
