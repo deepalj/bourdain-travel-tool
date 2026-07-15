@@ -1,58 +1,56 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Thermometer, Cloud, Wind } from "lucide-react";
+import { Clock, Thermometer, Wind } from "lucide-react";
+import { Destination } from "@/data/destinations";
+import { estimateTimezoneOffset } from "@/utils/timezone";
 
 interface EnvironmentHUDProps {
-  destinationId: string;
+  destination: Destination;
 }
 
-interface EnvData {
-  timezoneOffset: number;
+interface EnvNotes {
   temperature: string;
   condition: string;
   notes: string;
 }
 
-const locationEnvData: Record<string, EnvData> = {
+const locationEnvData: Record<string, EnvNotes> = {
   "vietnam-hanoi": {
-    timezoneOffset: 7,
     temperature: "32°C",
     condition: "Hazy & Humid",
     notes: "Smells of roasting coffee, diesel, and frying shallots."
   },
   "morocco-marrakech": {
-    timezoneOffset: 1,
     temperature: "28°C",
     condition: "Dry & Dusty",
     notes: "Scent of mint tea, saffron, lamb, and burning cedarwood."
   },
   "japan-tokyo": {
-    timezoneOffset: 9,
     temperature: "22°C",
     condition: "Overcast & Clean",
     notes: "Sounds of railway chimes, neon hum, and boiling dashi."
   },
   "france-paris": {
-    timezoneOffset: 2,
     temperature: "19°C",
     condition: "Drizzly Rain",
     notes: "Aromas of fresh yeast, red wine, and damp stone pavements."
   },
   "mexico-oaxaca": {
-    timezoneOffset: -6,
     temperature: "25°C",
     condition: "Sunlight & Clear",
     notes: "Tastes of toasted corn, chilies, chocolate, and oak smoke."
   }
 };
 
-export default function EnvironmentHUD({ destinationId }: EnvironmentHUDProps) {
-  const env = locationEnvData[destinationId] || {
-    timezoneOffset: 0,
-    temperature: "20°C",
-    condition: "Normal",
-    notes: "Field notes recording..."
+export default function EnvironmentHUD({ destination }: EnvironmentHUDProps) {
+  // Estimate offset dynamically from Longitude
+  const offset = estimateTimezoneOffset(destination.lng, destination.id);
+
+  const env = locationEnvData[destination.id] || {
+    temperature: "24°C",
+    condition: "Clear Sky",
+    notes: `Bourdain-esque logs describing the culinary and travel aesthetics of ${destination.name}, ${destination.country}.`
   };
 
   const [localTime, setLocalTime] = useState("");
@@ -63,7 +61,7 @@ export default function EnvironmentHUD({ destinationId }: EnvironmentHUDProps) {
       const d = new Date();
       const utc = d.getTime() + d.getTimezoneOffset() * 60000;
       // Apply offset (in milliseconds)
-      const localDate = new Date(utc + 3600000 * env.timezoneOffset);
+      const localDate = new Date(utc + 3600000 * offset);
       
       setLocalTime(localDate.toLocaleTimeString("en-US", {
         hour: "2-digit",
@@ -76,7 +74,7 @@ export default function EnvironmentHUD({ destinationId }: EnvironmentHUDProps) {
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [env.timezoneOffset]);
+  }, [offset]);
 
   return (
     <div className="space-y-3">
@@ -87,7 +85,7 @@ export default function EnvironmentHUD({ destinationId }: EnvironmentHUDProps) {
         <div className="border border-neutral-800/60 bg-neutral-950/40 p-3 rounded-lg flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-orange-500/70 flex-shrink-0" />
           <div className="overflow-hidden">
-            <div className="text-neutral-500 text-[8px] uppercase">Local Time</div>
+            <div className="text-neutral-500 text-[8px] uppercase">Local Time (GMT{offset >= 0 ? `+${offset}` : offset})</div>
             <div className="text-neutral-200 font-semibold">{localTime || "00:00:00"}</div>
           </div>
         </div>
