@@ -8,6 +8,8 @@ interface TravelGlobeProps {
   destinations: Destination[];
   selectedDestination: Destination | null;
   onSelectDestination: (dest: Destination) => void;
+  onGlobeClick?: (coords: { lat: number; lng: number }) => void;
+  tempFormCoords?: { lat: number; lng: number } | null;
 }
 
 // Chronological flight paths connecting Bourdain's destinations
@@ -22,7 +24,9 @@ const arcsData = [
 export default function TravelGlobe({ 
   destinations, 
   selectedDestination, 
-  onSelectDestination 
+  onSelectDestination,
+  onGlobeClick,
+  tempFormCoords
 }: TravelGlobeProps) {
   const globeRef = useRef<any>(null);
 
@@ -55,22 +59,30 @@ export default function TravelGlobe({
         },
         2200 // animation duration in ms
       );
-
-      // Optionally restart slow autoRotate after a delay if user stops interacting
-      const timeout = setTimeout(() => {
-        // Only restart if the current selection is still this destination
-        if (selectedDestination) {
-          // Keep it paused while focused, but we could enable slow rotation if desired
-        }
-      }, 5000);
-
-      return () => clearTimeout(timeout);
     } else if (globeRef.current && !selectedDestination) {
       // Resume auto-rotation if nothing is selected
       const controls = globeRef.current.controls();
       controls.autoRotate = true;
     }
   }, [selectedDestination]);
+
+  // Combine saved destinations with any unsaved coordinates clicked in the Log form
+  const combinedPoints = [...destinations];
+  if (tempFormCoords) {
+    combinedPoints.push({
+      id: "temp-form-marker",
+      name: "Target Location",
+      country: "Selected on Globe",
+      lat: tempFormCoords.lat,
+      lng: tempFormCoords.lng,
+      coordinates: `${tempFormCoords.lat.toFixed(4)}° N, ${tempFormCoords.lng.toFixed(4)}° E`,
+      quote: "Configure this location details inside the Log Journey form.",
+      description: "Save this location in the form.",
+      culinaryHighlights: [],
+      lessonsLearned: [],
+      status: "planned"
+    });
+  }
 
   return (
     <div className="w-full h-full relative cursor-grab active:cursor-grabbing flex items-center justify-center">
@@ -81,16 +93,16 @@ export default function TravelGlobe({
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         
         // Marker Points
-        pointsData={destinations}
+        pointsData={combinedPoints}
         pointLat="lat"
         pointLng="lng"
-        pointColor={() => "#f97316"}
+        pointColor={(d: any) => d.id === "temp-form-marker" ? "#ef4444" : "#f97316"}
         pointAltitude={0.06}
-        pointRadius={0.35}
+        pointRadius={(d: any) => d.id === "temp-form-marker" ? 0.6 : 0.35}
         pointsMerge={false}
         pointLabel={(d: any) => `
           <div class="bg-neutral-950/90 border border-orange-500/30 text-white p-3 rounded-md shadow-xl backdrop-blur-sm max-w-xs font-mono">
-            <h4 class="font-serif text-sm font-bold text-orange-500 mb-0.5">${d.name}</h4>
+            <h4 class="font-serif text-sm font-bold ${d.id === "temp-form-marker" ? "text-red-500" : "text-orange-500"} mb-0.5">${d.name}</h4>
             <p class="text-[10px] text-neutral-400 mb-1">${d.country} • ${d.coordinates}</p>
             <p class="text-[9px] italic text-neutral-300 leading-normal border-t border-neutral-800/80 pt-1.5">
               "${d.quote.substring(0, 80)}..."
@@ -98,7 +110,14 @@ export default function TravelGlobe({
           </div>
         `}
         onPointClick={(point: any) => {
-          onSelectDestination(point as Destination);
+          if (point.id !== "temp-form-marker") {
+            onSelectDestination(point as Destination);
+          }
+        }}
+        onGlobeClick={(coords) => {
+          if (onGlobeClick) {
+            onGlobeClick({ lat: coords.lat, lng: coords.lng });
+          }
         }}
 
         // Arcs (Flight paths)
@@ -121,6 +140,11 @@ export default function TravelGlobe({
         <div>RENDERER: WEBGL-THREEJS</div>
         <div>AUTO_ROTATE: {selectedDestination ? "PAUSED" : "ACTIVE"}</div>
         <div>DAMPING: ENABLED</div>
+        {tempFormCoords && (
+          <div className="text-red-400 font-bold border-t border-neutral-900 pt-1 mt-1 animate-pulse">
+            * PLACING PIN: {tempFormCoords.lat.toFixed(2)} / {tempFormCoords.lng.toFixed(2)}
+          </div>
+        )}
       </div>
     </div>
   );

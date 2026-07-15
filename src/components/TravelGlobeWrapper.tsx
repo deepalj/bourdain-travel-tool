@@ -6,10 +6,11 @@ interface TravelGlobeWrapperProps {
   destinations: Destination[];
   selectedDestination: Destination | null;
   onSelectDestination: (dest: Destination) => void;
+  onGlobeClick?: (coords: { lat: number; lng: number }) => void;
+  tempFormCoords?: { lat: number; lng: number } | null;
 }
 
 // Dynamically import the WebGL Globe component to disable server-side rendering (SSR)
-// This prevents node-side reference errors to browser-only window/document APIs.
 const TravelGlobe = dynamic(() => import("./TravelGlobe"), {
   ssr: false,
   loading: () => (
@@ -24,7 +25,9 @@ const TravelGlobe = dynamic(() => import("./TravelGlobe"), {
 export default function TravelGlobeWrapper({ 
   destinations, 
   selectedDestination, 
-  onSelectDestination 
+  onSelectDestination,
+  onGlobeClick,
+  tempFormCoords
 }: TravelGlobeWrapperProps) {
   return (
     <div className="w-full h-full min-h-[400px] md:min-h-0 bg-neutral-950 relative">
@@ -32,6 +35,8 @@ export default function TravelGlobeWrapper({
         destinations={destinations}
         selectedDestination={selectedDestination}
         onSelectDestination={onSelectDestination}
+        onGlobeClick={onGlobeClick}
+        tempFormCoords={tempFormCoords}
       />
     </div>
   );

@@ -23,13 +23,15 @@ CREATE TABLE destinations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
--- 3. CREATE CULINARY HIGHLIGHTS TABLE
+-- 3. CREATE CULINARY HIGHLIGHTS TABLE (WITH HEAT & AUTHENTICITY METERS)
 CREATE TABLE culinary_highlights (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     destination_id TEXT NOT NULL REFERENCES destinations(id) ON DELETE CASCADE,
     dish TEXT NOT NULL,
     description TEXT NOT NULL,
     category TEXT NOT NULL CHECK (category IN ('street-food', 'fine-dining', 'local-specialty')),
+    heat_level INTEGER DEFAULT 1 CHECK (heat_level >= 1 AND heat_level <= 5),
+    authenticity INTEGER DEFAULT 5 CHECK (authenticity >= 1 AND authenticity <= 5),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 
@@ -56,6 +58,17 @@ CREATE POLICY "Allow public read access on culinary_highlights" ON culinary_high
 CREATE POLICY "Allow public read access on lessons" ON lessons
     FOR SELECT USING (true);
 
+-- CREATE WRITE POLICIES (Allow public insertions - convenient for demo portfolios)
+CREATE POLICY "Allow public inserts on destinations" ON destinations
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public inserts on culinary_highlights" ON culinary_highlights
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow public inserts on lessons" ON lessons
+    FOR INSERT WITH CHECK (true);
+
+
 -- 7. SEED INITIAL DATA
 
 -- Seed Destinations
@@ -70,25 +83,25 @@ INSERT INTO destinations (id, name, country, lat, lng, coordinates, quote, descr
 
 ('mexico-oaxaca', 'Oaxaca', 'Mexico', 17.0732, -96.7266, '17.0732° N, 96.7266° W', 'Mexico is a country we are deeply connected to, yet understand so little. Oaxaca is the culinary heart of the country, where centuries of Indigenous tradition mix with Spanish influence to create moles that are as complex as any French grand sauce.', 'The land of the seven moles. A vibrant city of colonial architecture, bustling indigenous markets, and the birthplace of mezcal.', 'visited');
 
--- Seed Culinary Highlights
-INSERT INTO culinary_highlights (destination_id, dish, description, category) VALUES
-('vietnam-hanoi', 'Bún Chả', 'Charcoal-grilled pork patties and belly served in warm dipping sauce with rice noodles and fresh herbs. The legendary dish shared with President Obama.', 'street-food'),
-('vietnam-hanoi', 'Pho Bo', 'Rich, spiced beef broth simmered for 24 hours, poured over tender flat rice noodles and rare beef slices, topped with green onions.', 'local-specialty'),
-('vietnam-hanoi', 'Egg Coffee (Cà Phê Trứng)', 'Vietnamese dark roast coffee topped with an airy, creamy whip of egg yolk and condensed milk. A dessert and kickstart combined.', 'local-specialty'),
+-- Seed Culinary Highlights (with heat_level and authenticity values)
+INSERT INTO culinary_highlights (destination_id, dish, description, category, heat_level, authenticity) VALUES
+('vietnam-hanoi', 'Bún Chả', 'Charcoal-grilled pork patties and belly served in warm dipping sauce with rice noodles and fresh herbs. The legendary dish shared with President Obama.', 'street-food', 2, 5),
+('vietnam-hanoi', 'Pho Bo', 'Rich, spiced beef broth simmered for 24 hours, poured over tender flat rice noodles and rare beef slices, topped with green onions.', 'local-specialty', 1, 5),
+('vietnam-hanoi', 'Egg Coffee (Cà Phê Trứng)', 'Vietnamese dark roast coffee topped with an airy, creamy whip of egg yolk and condensed milk. A dessert and kickstart combined.', 'local-specialty', 1, 4),
 
-('morocco-marrakech', 'Lamb Tagine', 'Slow-braised lamb shank cooked in a conical clay pot with prunes, almonds, and saffron until the meat falls off the bone.', 'local-specialty'),
-('morocco-marrakech', 'Harira Soup', 'A rich tomato, lentil, and chickpea soup flavored with cilantro, parsley, ginger, and turmeric, traditionally eaten to break the fast.', 'street-food'),
+('morocco-marrakech', 'Lamb Tagine', 'Slow-braised lamb shank cooked in a conical clay pot with prunes, almonds, and saffron until the meat falls off the bone.', 'local-specialty', 2, 5),
+('morocco-marrakech', 'Harira Soup', 'A rich tomato, lentil, and chickpea soup flavored with cilantro, parsley, ginger, and turmeric, traditionally eaten to break the fast.', 'street-food', 2, 4),
 
-('japan-tokyo', 'Edomae Sushi', 'Perfectly seasoned, warm vinegared rice topped with aged or fresh seafood, brushed with nikiri soy sauce by a chef who has trained for decades.', 'fine-dining'),
-('japan-tokyo', 'Tonkotsu Ramen', 'Thick, creamy, emulsified pork bone broth served with thin noodles, chashu pork belly, soft-boiled egg, and wood ear mushrooms.', 'street-food'),
-('japan-tokyo', 'Yakitori', 'Skewered chicken parts grilled over white binchotan charcoal, glazed with tare sauce at a smoky alleyway counter.', 'street-food'),
+('japan-tokyo', 'Edomae Sushi', 'Perfectly seasoned, warm vinegared rice topped with aged or fresh seafood, brushed with nikiri soy sauce by a chef who has trained for decades.', 'fine-dining', 1, 5),
+('japan-tokyo', 'Tonkotsu Ramen', 'Thick, creamy, emulsified pork bone broth served with thin noodles, chashu pork belly, soft-boiled egg, and wood ear mushrooms.', 'street-food', 2, 4),
+('japan-tokyo', 'Yakitori', 'Skewered chicken parts grilled over white binchotan charcoal, glazed with tare sauce at a smoky alleyway counter.', 'street-food', 1, 4),
 
-('france-paris', 'Steak Frites', 'Seared ribeye steak basted in foaming butter and garlic, served with crispy double-fried hand-cut potatoes and a rich béarnaise.', 'local-specialty'),
-('france-paris', 'Escargot de Bourgogne', 'Plump land snails baked in their shells with a rich filling of butter, garlic, and flat-leaf parsley.', 'fine-dining'),
+('france-paris', 'Steak Frites', 'Seared ribeye steak basted in foaming butter and garlic, served with crispy double-fried hand-cut potatoes and a rich béarnaise.', 'local-specialty', 1, 4),
+('france-paris', 'Escargot de Bourgogne', 'Plump land snails baked in their shells with a rich filling of butter, garlic, and flat-leaf parsley.', 'fine-dining', 1, 5),
 
-('mexico-oaxaca', 'Mole Negro', 'A dark, complex sauce made from over 30 ingredients including toasted chilies, spices, seeds, nuts, and Mexican chocolate, served over chicken.', 'local-specialty'),
-('mexico-oaxaca', 'Tlayuda', 'A large, crispy toasted tortilla smeared with pork lard (asiento), refried beans, quesillo (string cheese), and topped with grilled meats.', 'street-food'),
-('mexico-oaxaca', 'Mezcal', 'An artisanal smoky spirit distilled from roasted agave hearts, served neat with orange slices and sal de gusano (worm salt).', 'local-specialty');
+('mexico-oaxaca', 'Mole Negro', 'A dark, complex sauce made from over 30 ingredients including toasted chilies, spices, seeds, nuts, and Mexican chocolate, served over chicken.', 'local-specialty', 3, 5),
+('mexico-oaxaca', 'Tlayuda', 'A large, crispy toasted tortilla smeared with pork lard (asiento), refried beans, quesillo (string cheese), and topped with grilled meats.', 'street-food', 2, 4),
+('mexico-oaxaca', 'Mezcal', 'An artisanal smoky spirit distilled from roasted agave hearts, served neat with orange slices and sal de gusano (worm salt).', 'local-specialty', 4, 5);
 
 -- Seed Lessons
 INSERT INTO lessons (destination_id, lesson) VALUES

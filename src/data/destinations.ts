@@ -2,6 +2,8 @@ export interface CulinaryHighlight {
   dish: string;
   description: string;
   category: "street-food" | "fine-dining" | "local-specialty";
+  heatLevel: number; // 1 to 5 (chili 🌶️ rating)
+  authenticity: number; // 1 to 5 (flame 🔥 rating)
 }
 
 export interface Destination {
@@ -32,17 +34,23 @@ export const destinations: Destination[] = [
       {
         dish: "Bún Chả",
         description: "Charcoal-grilled pork patties and belly served in warm dipping sauce with rice noodles and fresh herbs. The legendary dish shared with President Obama.",
-        category: "street-food"
+        category: "street-food",
+        heatLevel: 2,
+        authenticity: 5
       },
       {
         dish: "Pho Bo",
         description: "Rich, spiced beef broth simmered for 24 hours, poured over tender flat rice noodles and rare beef slices, topped with green onions.",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 1,
+        authenticity: 5
       },
       {
         dish: "Egg Coffee (Cà Phê Trứng)",
         description: "Vietnamese dark roast coffee topped with an airy, creamy whip of egg yolk and condensed milk. A dessert and kickstart combined.",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 1,
+        authenticity: 4
       }
     ],
     lessonsLearned: [
@@ -65,12 +73,16 @@ export const destinations: Destination[] = [
       {
         dish: "Lamb Tagine",
         description: "Slow-braised lamb shank cooked in a conical clay pot with prunes, almonds, and saffron until the meat falls off the bone.",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 2,
+        authenticity: 5
       },
       {
         dish: "Harira Soup",
         description: "A rich tomato, lentil, and chickpea soup flavored with cilantro, parsley, ginger, and turmeric, traditionally eaten to break the fast.",
-        category: "street-food"
+        category: "street-food",
+        heatLevel: 2,
+        authenticity: 4
       }
     ],
     lessonsLearned: [
@@ -93,17 +105,23 @@ export const destinations: Destination[] = [
       {
         dish: "Edomae Sushi",
         description: "Perfectly seasoned, warm vinegared rice topped with aged or fresh seafood, brushed with nikiri soy sauce by a chef who has trained for decades.",
-        category: "fine-dining"
+        category: "fine-dining",
+        heatLevel: 1,
+        authenticity: 5
       },
       {
         dish: "Tonkotsu Ramen",
         description: "Thick, creamy, emulsified pork bone broth served with thin noodles, chashu pork belly, soft-boiled egg, and wood ear mushrooms.",
-        category: "street-food"
+        category: "street-food",
+        heatLevel: 2,
+        authenticity: 4
       },
       {
         dish: "Yakitori",
         description: "Skewered chicken parts grilled over white binchotan charcoal, glazed with tare sauce at a smoky alleyway counter.",
-        category: "street-food"
+        category: "street-food",
+        heatLevel: 1,
+        authenticity: 4
       }
     ],
     lessonsLearned: [
@@ -126,12 +144,16 @@ export const destinations: Destination[] = [
       {
         dish: "Steak Frites",
         description: "Seared ribeye steak basted in foaming butter and garlic, served with crispy double-fried hand-cut potatoes and a rich béarnaise.",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 1,
+        authenticity: 4
       },
       {
         dish: "Escargot de Bourgogne",
         description: "Plump land snails baked in their shells with a rich filling of butter, garlic, and flat-leaf parsley.",
-        category: "fine-dining"
+        category: "fine-dining",
+        heatLevel: 1,
+        authenticity: 5
       }
     ],
     lessonsLearned: [
@@ -154,17 +176,23 @@ export const destinations: Destination[] = [
       {
         dish: "Mole Negro",
         description: "A dark, complex sauce made from over 30 ingredients including toasted chilies, spices, seeds, nuts, and Mexican chocolate, served over chicken.",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 3,
+        authenticity: 5
       },
       {
         dish: "Tlayuda",
         description: "A large, crispy toasted tortilla smeared with pork lard (asiento), refried beans, quesillo (string cheese), and topped with grilled meats.",
-        category: "street-food"
+        category: "street-food",
+        heatLevel: 2,
+        authenticity: 4
       },
       {
         dish: "Mezcal",
         description: "An artisanal smoky spirit distilled from roasted agave hearts, served neat with orange slices and sal de gusano (worm salt).",
-        category: "local-specialty"
+        category: "local-specialty",
+        heatLevel: 4,
+        authenticity: 5
       }
     ],
     lessonsLearned: [

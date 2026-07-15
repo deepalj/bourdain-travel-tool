@@ -8,16 +8,18 @@ import {
   Utensils, 
   BookOpen, 
   Cpu, 
-  Loader2
+  Loader2,
+  Plus
 } from "lucide-react";
 import { Destination } from "@/data/destinations";
-import { fetchDestinations } from "@/utils/dataService";
+import { fetchDestinations, saveDestination } from "@/utils/dataService";
 import { isSupabaseConfigured } from "@/utils/supabase";
 import TravelGlobeWrapper from "@/components/TravelGlobeWrapper";
 import RetroVoiceDispatch from "@/components/RetroVoiceDispatch";
 import PassportStamps from "@/components/PassportStamps";
 import EnvironmentHUD from "@/components/EnvironmentHUD";
 import BuilderDrawer from "@/components/BuilderDrawer";
+import LogJourneyModal from "@/components/LogJourneyModal";
 
 export default function BourdainTravelApp() {
   const [destinationsList, setDestinationsList] = useState<Destination[]>([]);
@@ -25,6 +27,11 @@ export default function BourdainTravelApp() {
   const [activeTab, setActiveTab] = useState<"journal" | "culinary">("journal");
   const [isLoading, setIsLoading] = useState(true);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+
+  // Form states for creating new journeys
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [clickedCoords, setClickedCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [tempPinCoords, setTempPinCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     fetchDestinations().then(data => {
@@ -40,6 +47,29 @@ export default function BourdainTravelApp() {
 
   const handleDestinationSelect = (dest: Destination) => {
     setSelectedDestId(dest.id);
+  };
+
+  const handleGlobeClick = (coords: { lat: number; lng: number }) => {
+    if (isLogModalOpen) {
+      setClickedCoords(coords);
+      setTempPinCoords(coords);
+    }
+  };
+
+  const handleSaveJourney = async (newDest: Destination) => {
+    const success = await saveDestination(newDest);
+    if (success) {
+      setDestinationsList(prev => [...prev, newDest]);
+      setSelectedDestId(newDest.id);
+      setTempPinCoords(null);
+    } else {
+      alert("Failed to save new travel dispatch to Supabase.");
+    }
+  };
+
+  const handleCloseLogModal = () => {
+    setIsLogModalOpen(false);
+    setTempPinCoords(null);
   };
 
   if (isLoading) {
@@ -133,9 +163,18 @@ export default function BourdainTravelApp() {
                 transition={{ duration: 0.2 }}
                 className="space-y-6"
               >
-                {/* Destination Selector */}
+                {/* Destination Selector Header */}
                 <div>
-                  <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-3">Choose Destination</h2>
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono">Choose Destination</h2>
+                    <button
+                      onClick={() => setIsLogModalOpen(true)}
+                      className="px-2.5 py-1 rounded bg-orange-500/10 border border-orange-500/20 hover:border-orange-500/50 text-orange-500 transition-all font-mono text-[9px] cursor-pointer flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Log Journey</span>
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {destinationsList.map((dest) => (
                       <button
@@ -213,6 +252,13 @@ export default function BourdainTravelApp() {
                   <span className="text-xs text-neutral-400 font-mono bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800">{selectedDest.country}</span>
                 </div>
 
+                {/* Empty State */}
+                {selectedDest.culinaryHighlights.length === 0 && (
+                  <p className="text-xs text-neutral-500 italic text-center py-4 bg-neutral-900/20 border border-dashed border-neutral-850 rounded-lg">
+                    No tasting dispatches logged for this destination.
+                  </p>
+                )}
+
                 <div className="space-y-4">
                   {selectedDest.culinaryHighlights.map((highlight, idx) => (
                     <motion.div
@@ -236,9 +282,40 @@ export default function BourdainTravelApp() {
                           {highlight.category.replace("-", " ")}
                         </span>
                       </div>
-                      <p className="text-xs text-neutral-400 leading-relaxed font-sans">
+                      
+                      <p className="text-xs text-neutral-400 leading-relaxed font-sans mb-3">
                         {highlight.description}
                       </p>
+
+                      {/* Step 5: Authenticity & Heat Meters */}
+                      <div className="grid grid-cols-2 border-t border-neutral-900 pt-2.5 font-mono text-[9px] text-neutral-500">
+                        <div className="flex items-center gap-1">
+                          <span>HEAT:</span>
+                          <span className="flex gap-0.5" title={`Spiciness: ${highlight.heatLevel}/5`}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span 
+                                key={i} 
+                                className={`${i < highlight.heatLevel ? "text-red-500 text-glow-red opacity-100" : "text-neutral-800"}`}
+                              >
+                                🌶️
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 justify-end">
+                          <span>ADVENTURE:</span>
+                          <span className="flex gap-0.5" title={`Adventurousness: ${highlight.authenticity}/5`}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span 
+                                key={i} 
+                                className={`${i < highlight.authenticity ? "text-orange-500 text-glow-amber opacity-100" : "text-neutral-800"}`}
+                              >
+                                🔥
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -263,11 +340,22 @@ export default function BourdainTravelApp() {
           destinations={destinationsList}
           selectedDestination={selectedDest}
           onSelectDestination={handleDestinationSelect}
+          onGlobeClick={handleGlobeClick}
+          tempFormCoords={tempPinCoords}
         />
       </main>
 
       {/* Slider Drawer for Developer Skills Portfolio */}
       <BuilderDrawer isOpen={isBuilderOpen} onClose={() => setIsBuilderOpen(false)} />
+
+      {/* Log Journey Modal Overlay */}
+      <LogJourneyModal
+        isOpen={isLogModalOpen}
+        onClose={handleCloseLogModal}
+        onSave={handleSaveJourney}
+        clickedCoords={clickedCoords}
+        onClearClickedCoords={() => setClickedCoords(null)}
+      />
     </div>
   );
 }
