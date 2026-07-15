@@ -8,20 +8,23 @@ import {
   Utensils, 
   BookOpen, 
   Cpu, 
-  Database, 
-  Sparkles, 
   Loader2
 } from "lucide-react";
 import { Destination } from "@/data/destinations";
 import { fetchDestinations } from "@/utils/dataService";
 import { isSupabaseConfigured } from "@/utils/supabase";
 import TravelGlobeWrapper from "@/components/TravelGlobeWrapper";
+import RetroVoiceDispatch from "@/components/RetroVoiceDispatch";
+import PassportStamps from "@/components/PassportStamps";
+import EnvironmentHUD from "@/components/EnvironmentHUD";
+import BuilderDrawer from "@/components/BuilderDrawer";
 
 export default function BourdainTravelApp() {
   const [destinationsList, setDestinationsList] = useState<Destination[]>([]);
   const [selectedDestId, setSelectedDestId] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<"journal" | "culinary" | "portfolio">("journal");
+  const [activeTab, setActiveTab] = useState<"journal" | "culinary">("journal");
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
 
   useEffect(() => {
     fetchDestinations().then(data => {
@@ -63,7 +66,16 @@ export default function BourdainTravelApp() {
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 ambient-glow rounded-full pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 ambient-glow-red rounded-full pointer-events-none" />
 
-      {/* Left Sidebar: Journal / Stats / Portfolio */}
+      {/* Floating Builder Log Trigger Button */}
+      <button
+        onClick={() => setIsBuilderOpen(true)}
+        className="absolute top-6 right-6 z-30 bg-neutral-950/85 hover:bg-neutral-900 border border-neutral-800 text-white rounded-full py-2.5 px-4 flex items-center gap-2 font-mono text-xs shadow-xl backdrop-blur-md transition-all hover:scale-105 active:scale-95 group hover:border-orange-500/50 cursor-pointer"
+      >
+        <Cpu className="w-4 h-4 text-orange-500 group-hover:animate-pulse" />
+        <span>Builder Log</span>
+      </button>
+
+      {/* Left Sidebar: Journal / Stats */}
       <aside className="w-full md:w-[420px] lg:w-[460px] flex-shrink-0 flex flex-col border-b md:border-b-0 md:border-r border-neutral-800/60 bg-neutral-950/80 backdrop-blur-md z-10">
         {/* Header Section */}
         <div className="p-6 border-b border-neutral-800/60">
@@ -83,8 +95,8 @@ export default function BourdainTravelApp() {
           </p>
         </div>
 
-        {/* Dynamic Navigation Tabs */}
-        <div className="grid grid-cols-3 border-b border-neutral-800/60 font-mono text-xs text-center bg-neutral-900/30">
+        {/* Dynamic Navigation Tabs (Field Notes & Tasting Log) */}
+        <div className="grid grid-cols-2 border-b border-neutral-800/60 font-mono text-xs text-center bg-neutral-900/30">
           <button
             onClick={() => setActiveTab("journal")}
             className={`py-3 flex flex-col items-center gap-1 border-b-2 transition-all ${
@@ -106,17 +118,6 @@ export default function BourdainTravelApp() {
           >
             <Utensils className="w-4 h-4" />
             <span>Tasting Log</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("portfolio")}
-            className={`py-3 flex flex-col items-center gap-1 border-b-2 transition-all ${
-              activeTab === "portfolio" 
-                ? "border-orange-500 text-orange-500 bg-orange-500/5 font-semibold" 
-                : "border-transparent text-neutral-400 hover:text-neutral-200"
-            }`}
-          >
-            <Cpu className="w-4 h-4" />
-            <span>Builder Log</span>
           </button>
         </div>
 
@@ -158,17 +159,24 @@ export default function BourdainTravelApp() {
                   <span>COORDS: {selectedDest.coordinates}</span>
                 </div>
 
-                {/* The Quote Block (Cinematic Typewriter Vibe) */}
-                <div className="relative border-l-2 border-orange-500/40 pl-4 py-1 italic text-neutral-300 font-serif text-lg leading-relaxed bg-orange-950/5 pr-2 rounded-r-md">
-                  <span className="absolute -top-3 left-2 text-5xl text-orange-500/10 font-serif select-none">&ldquo;</span>
-                  <p className="relative z-10">&ldquo;{selectedDest.quote}&rdquo;</p>
-                </div>
+                {/* Step 4: The Voice Dispatch Tape Player */}
+                <RetroVoiceDispatch quote={selectedDest.quote} />
 
                 {/* Description */}
                 <div className="space-y-2">
                   <h3 className="text-xs uppercase tracking-widest text-neutral-500 font-mono">Observations</h3>
                   <p className="text-sm text-neutral-400 leading-relaxed font-sans">{selectedDest.description}</p>
                 </div>
+
+                {/* Step 4: Environment HUD */}
+                <EnvironmentHUD destinationId={selectedDest.id} />
+
+                {/* Step 4: Passport Stamp (Tilt Interaction) */}
+                <PassportStamps 
+                  destinationId={selectedDest.id}
+                  cityName={selectedDest.name}
+                  countryName={selectedDest.country}
+                />
 
                 {/* Lessons Learned */}
                 <div className="space-y-3">
@@ -236,88 +244,11 @@ export default function BourdainTravelApp() {
                 </div>
               </motion.div>
             )}
-
-            {activeTab === "portfolio" && (
-              <motion.div
-                key="portfolio"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-2">The Builder&apos;s Logbook</h2>
-                  <p className="text-xs text-neutral-400 leading-relaxed">
-                    Weaving engineering discipline with the storytelling spirit of Bourdain. Here is how my skills line up with your team&apos;s search.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Skill Card 1: Frontend */}
-                  <div className="border border-neutral-800/80 bg-neutral-900/30 hover:bg-neutral-900/50 p-4 rounded-lg transition-all hover:border-orange-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-4 h-4 text-orange-500" />
-                      <h3 className="text-sm font-semibold text-white font-serif">Frontend Artistry & Detail</h3>
-                    </div>
-                    <p className="text-xs text-neutral-400 leading-relaxed mb-3">
-                      Expert in craft-first React, Next.js, Framer Motion, and Tailwind CSS. Obsessive about sub-pixel alignment, lighting, motion design, and layouts that command attention.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Next.js 15</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">React 19</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Three.js</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Framer Motion</span>
-                    </div>
-                  </div>
-
-                  {/* Skill Card 2: Supabase / DB */}
-                  <div className="border border-neutral-800/80 bg-neutral-900/30 hover:bg-neutral-900/50 p-4 rounded-lg transition-all hover:border-orange-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Database className="w-4 h-4 text-orange-500" />
-                      <h3 className="text-sm font-semibold text-white font-serif">Database & Backend Plumbing</h3>
-                    </div>
-                    <p className="text-xs text-neutral-400 leading-relaxed mb-3">
-                      Solid understanding of PostgreSQL, relational schema design, real-time sync, Row-Level Security (RLS) policies, and authentication flows via Supabase.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Supabase</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">PostgreSQL</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">RLS Security</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">REST APIs</span>
-                    </div>
-                  </div>
-
-                  {/* Skill Card 3: AI Tooling */}
-                  <div className="border border-neutral-800/80 bg-neutral-900/30 hover:bg-neutral-900/50 p-4 rounded-lg transition-all hover:border-orange-500/20">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Cpu className="w-4 h-4 text-orange-500" />
-                      <h3 className="text-sm font-semibold text-white font-serif">AI-Assisted Velocity</h3>
-                      <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded">Productive</span>
-                    </div>
-                    <p className="text-xs text-neutral-400 leading-relaxed mb-3">
-                      Highly comfortable co-piloting with agentic tools (like Antigravity). Skilled at directing agent prompts, managing context sizes, and leveraging AI for rapid iteration while taking complete architectural ownership.
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Agentic Coding</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded border border-neutral-700">Context Engineering</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-neutral-800/60 pt-4 mt-2">
-                  <h4 className="text-[11px] uppercase font-mono text-neutral-400 mb-2">Portfolio Overview & Mission</h4>
-                  <div className="text-[11px] text-neutral-500 font-serif leading-relaxed italic">
-                    &ldquo;Like culinary apprenticeships, software engineering is a craft. You learn the tools, study the masters, and then you take ownership to ship real, delicious products.&rdquo;
-                  </div>
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
         </div>
 
         {/* Sidebar Footer Details */}
-        <div className="p-4 border-t border-neutral-800/60 bg-neutral-950 font-mono text-[10px] text-neutral-500 flex justify-between items-center">
+        <div className="p-4 border-t border-neutral-800/60 bg-neutral-950 font-mono text-[10px] text-neutral-500 flex justify-between items-center mt-auto">
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured ? "bg-green-500 animate-pulse" : "bg-amber-500"}`}></span>
             <span>DB: {isSupabaseConfigured ? "SUPABASE LIVE" : "MOCK FALLBACK"}</span>
@@ -334,6 +265,9 @@ export default function BourdainTravelApp() {
           onSelectDestination={handleDestinationSelect}
         />
       </main>
+
+      {/* Slider Drawer for Developer Skills Portfolio */}
+      <BuilderDrawer isOpen={isBuilderOpen} onClose={() => setIsBuilderOpen(false)} />
     </div>
   );
 }
